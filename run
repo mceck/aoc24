@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+mkdir -p bin
+
+gcc -o bin/$1 src/$1.c
+
+./bin/$1
