@@ -41,10 +41,30 @@ int sumDistances(inputData *data) {
   return sum;
 }
 
+int count(int val, int *v, int size) {
+  int count = 0;
+  for (int i = 0; i < size; i++) {
+    if (v[i] == val) {
+      count++;
+    }
+  }
+  return count;
+}
+
+int sumSimilarity(inputData *data) {
+  int sum = 0;
+  for (int i = 0; i < data->size; i++) {
+    sum += (data->a[i] * count(data->a[i], data->b, data->size));
+  }
+  return sum;
+}
+
 int main() {
   inputData *data = readInput();
   int sum = sumDistances(data);
   printf("Sum of distances: %d\n", sum);
+  sum = sumSimilarity(data);
+  printf("Similarity: %d\n", sum);
   free(data);
   return 0;
 }

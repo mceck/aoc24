@@ -1,56 +1,82 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BUFFER_SIZE 1024
-
-typedef struct inputData inputData;
-
-struct inputData {
-  int a[BUFFER_SIZE];
-  int b[BUFFER_SIZE];
-  int size;
-};
-
-int intcmp(const void *a, const void *b) { return *(int *)a - *(int *)b; }
-
-inputData *readInput() {
-  FILE *f = fopen("data/1.txt", "r");
-  inputData *data = malloc(sizeof(inputData));
-  char a[8];
-  char b[8];
-
-  for (data->size = 0; feof(f) == 0; data->size++) {
-    // split by ,
-    fscanf(f, "%[^,],%s\n", a, b);
-    data->a[data->size] = atoi(a);
-    data->b[data->size] = atoi(b);
-  }
-  fclose(f);
-  return data;
-}
-
-int count(int val, int *v, int size) {
-  int count = 0;
-  for (int i = 0; i < size; i++) {
-    if (v[i] == val) {
-      count++;
+int readLine(FILE *f, int *arr) {
+  int i = 0;
+  while (1) {
+    int num;
+    fscanf(f, "%d", &num);
+    arr[i++] = num;
+    char sep = fgetc(f);
+    if (sep == '\n' || sep == EOF) {
+      break;
     }
   }
-  return count;
+  return i;
 }
 
-int sumSimilarity(inputData *data) {
-  int sum = 0;
-  for (int i = 0; i < data->size; i++) {
-    sum += (data->a[i] * count(data->a[i], data->b, data->size));
+void filterIndex(int j, int *input, int *output, int len) {
+  int k = 0;
+  for (int i = 0; i < len; i++) {
+    if (i != j) {
+      output[k++] = input[i];
+    }
   }
-  return sum;
+}
+
+int checkRow(int *buffer, int len, int jolly) {
+  if (len < 2) {
+    return 1;
+  }
+  int dir = buffer[1] > buffer[0] ? 1 : -1;
+  for (int i = 1; i < len; i++) {
+    int level = buffer[i];
+    int prev = buffer[i - 1];
+
+    if (level == prev || abs(level - prev) > 3 || (dir == 1 && level < prev) ||
+        (dir == -1 && level > prev)) {
+      if (!jolly) {
+        return 0;
+      }
+      int partial[32];
+      filterIndex(i, buffer, partial, len);
+      if (checkRow(partial, len - 1, jolly - 1)) {
+        return 1;
+      }
+      filterIndex(i - 1, buffer, partial, len);
+      if (checkRow(partial, len - 1, jolly - 1)) {
+        return 1;
+      }
+      if (i == 2) {
+        filterIndex(0, buffer, partial, len);
+        return checkRow(partial, len - 1, jolly - 1);
+      }
+      return 0;
+    }
+  }
+  return 1;
+}
+
+int checkSafeLevels(int jolly) {
+  FILE *f = fopen("data/2.txt", "r");
+  int total = 0;
+  int buffer[32];
+
+  while (!feof(f)) {
+    int len = readLine(f, buffer);
+    if (len == 0)
+      continue;
+    if (checkRow(buffer, len, jolly))
+      total++;
+  }
+  fclose(f);
+  return total;
 }
 
 int main() {
-  inputData *data = readInput();
-  int sum = sumSimilarity(data);
-  printf("Similarity: %d\n", sum);
-  free(data);
+  int safeLevels = checkSafeLevels(0);
+  printf("Safe levels: %d\n", safeLevels);
+  safeLevels = checkSafeLevels(1);
+  printf("Safe levels v2: %d\n", safeLevels);
   return 0;
 }
