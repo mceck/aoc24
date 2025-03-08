@@ -93,48 +93,65 @@ void prgLoop(char *program) {
   }
 }
 
+// B = A & 0x111
+// B = B ^ 0x011
+// C = A >> B
+// B = B ^ C
+// B = B ^ 0x011
+// A = A >> 3
+// print B
+// jmpz
+char *compute_A(char *program) {
+  char *res = calloc(prg_len * 2, sizeof(char));
+  int i = 0, p = 0;
+  u_int64_t oB = B;
+  u_int64_t oC = C;
+  // fixme
+  while (i < 16) {
+    for (int j = 0; j < 32; j++) {
+      A = j;
+      B = oB;
+      C = oC;
+      // printf("A: %lld ", A);
+      i_ptr = 0;
+      p_stdout_ptr = 0;
+      p_stdout[0] = '\0';
+      for (int k = 0; k < prg_len; k += 2) {
+        prgLoop(program);
+      }
+      char out = p_stdout[0];
+      // printf("OUT: %c %c\n", out, program[i]);
+      if (out == program[i]) {
+        printf("Match: %d\n", j);
+        if (j > 9) {
+          res[p++] = '0' + (j / 10);
+        }
+        res[p++] = '0' + (j % 10);
+        // printf("RES: %s\n", res);
+        oB = B;
+        oC = C;
+        i++;
+        break;
+      }
+    }
+  }
+  return res;
+}
+
 int main() {
   char *program = loadProgram("data/17.txt");
-  printf("Program: %s\n", program);
+  printf("Program: %s %lld\n", program, prg_len);
   while (i_ptr < prg_len) {
     prgLoop(program);
   }
   printf("OUT: %s\n", p_stdout);
   free(program);
 
-  //   printf("\n");
-  //   program = loadProgram("data/17.txt");
-  //   uint64_t bkB = B;
-  //   uint64_t bkC = C;
-  //   A = 0;
-  //   uint64_t bkA = A;
-  //   printf("Program: %s\n", program);
-  //   int err;
-  //   while (1) {
-  //     err = 0;
-  //     while (i_ptr < prg_len) {
-  //       prgLoop(program);
-  //       if (p_stdout_ptr &&
-  //           p_stdout[p_stdout_ptr - 1] != program[p_stdout_ptr - 1]) {
-  //         err = 1;
-  //         break;
-  //       }
-  //     }
-  //     if (!err && strcmp(p_stdout, program) == 0) {
-  //       printf("Found match! %llu\n", bkA);
-  //       break;
-  //     }
-  //     i_ptr = 0;
-  //     p_stdout_ptr = 0;
-  //     A = ++bkA;
-  //     B = bkB;
-  //     C = bkC;
-
-  //     if (A == 0) {
-  //       printf("No match found\n");
-  //       break;
-  //     }
-  //   }
-  //   free(program);
+  printf("\n");
+  program = loadProgram("data/17.txt");
+  char *cA = compute_A(program);
+  printf("A: %s\n", cA);
+  free(cA);
+  free(program);
   return 0;
 }
