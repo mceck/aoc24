@@ -93,65 +93,80 @@ void prgLoop(char *program) {
   }
 }
 
-// B = A & 0x111
-// B = B ^ 0x011
+// B = A & 0b111
+// B = B ^ 0b011
 // C = A >> B
 // B = B ^ C
-// B = B ^ 0x011
+// B = B ^ 0b011
 // A = A >> 3
 // print B
 // jmpz
-char *compute_A(char *program) {
-  char *res = calloc(prg_len * 2, sizeof(char));
-  int i = 0, p = 0;
-  u_int64_t oB = B;
-  u_int64_t oC = C;
-  // fixme
-  while (i < 16) {
-    for (int j = 0; j < 32; j++) {
-      A = j;
-      B = oB;
-      C = oC;
-      // printf("A: %lld ", A);
-      i_ptr = 0;
-      p_stdout_ptr = 0;
-      p_stdout[0] = '\0';
+u_int64_t computePartA(char *program) {
+  u_int64_t res = 0;
+  while (1) {
+    A = res;
+    B = 0;
+    C = 0;
+    i_ptr = 0;
+    p_stdout_ptr = 0;
+    p_stdout[0] = '\0';
+    int err = 0;
+    int z = 1;
+    for (int p = 0; p < 8; p++) {
       for (int k = 0; k < prg_len; k += 2) {
         prgLoop(program);
       }
-      char out = p_stdout[0];
-      // printf("OUT: %c %c\n", out, program[i]);
-      if (out == program[i]) {
-        printf("Match: %d\n", j);
-        if (j > 9) {
-          res[p++] = '0' + (j / 10);
-        }
-        res[p++] = '0' + (j % 10);
-        // printf("RES: %s\n", res);
-        oB = B;
-        oC = C;
-        i++;
+      char out = p_stdout[p];
+      if (out != program[p]) {
+        err = 1;
         break;
       }
     }
+    if (!err) {
+      break;
+    }
+    res++;
   }
+  printf("hex: %llx\n", res);
+  printf("partial out %s\n\n", p_stdout);
   return res;
 }
 
 int main() {
   char *program = loadProgram("data/17.txt");
-  printf("Program: %s %lld\n", program, prg_len);
+  printf("Program: %s len: %lld\n", program, prg_len);
   while (i_ptr < prg_len) {
     prgLoop(program);
   }
-  printf("OUT: %s\n", p_stdout);
+  printf("OUT:     %s\n", p_stdout);
   free(program);
 
   printf("\n");
   program = loadProgram("data/17.txt");
-  char *cA = compute_A(program);
-  printf("A: %s\n", cA);
-  free(cA);
+
+  // find the first part, 8 digits
+  u_int64_t cA = computePartA(program);
+  free(program);
+
+  // bruteforcing the rest
+  program = loadProgram("data/17.txt");
+  printf("Program: %s\n", program);
+  for (uint64_t a = 0; a < 0x100000; a++) {
+    u_int64_t nA = (a << 28) | cA;
+    A = nA;
+    i_ptr = 0;
+    p_stdout_ptr = 0;
+    p_stdout[0] = '\0';
+
+    while (i_ptr < prg_len) {
+      prgLoop(program);
+    }
+    if (strcmp(p_stdout, program) == 0) {
+      printf("OUT:     %s\n", p_stdout);
+      printf("A: %llu\n", nA);
+      break;
+    }
+  }
   free(program);
   return 0;
 }
